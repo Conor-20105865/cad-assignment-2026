@@ -88,6 +88,12 @@ export class AppApiStack extends cdk.Stack {
       },
     });
 
+    const adminApiKey = api.addApiKey('AdminApiKey');
+
+    const usagePlan = api.addUsagePlan('AdminUsagePlan');
+    usagePlan.addApiKey(adminApiKey);
+    usagePlan.addApiStage({ stage: api.deploymentStage });
+
     const userAuth: apig.MethodOptions = {
       authorizer: userAuthorizer,
       authorizationType: apig.AuthorizationType.CUSTOM,
@@ -97,7 +103,9 @@ export class AppApiStack extends cdk.Stack {
 
     moviesResource
       .addResource('roles')
-      .addMethod('POST', new apig.LambdaIntegration(addMovieRoleFn));
+      .addMethod('POST', new apig.LambdaIntegration(addMovieRoleFn), {
+        apiKeyRequired: true,
+      });
 
     const movieRolesResource = moviesResource.addResource('{movieID}').addResource('roles');
     movieRolesResource.addMethod('GET', new apig.LambdaIntegration(getMovieRolesFn), userAuth);
